@@ -1,0 +1,16 @@
+Before starting, install:
+
+Tools Required:
+
+    AWS CLI
+    kubectl
+    eksctl
+    Docker
+
+
+Verify:
+
+    aws --version
+    kubectl version --client
+    eksctl version
+    docker --version
