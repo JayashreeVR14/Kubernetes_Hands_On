@@ -1,0 +1,2 @@
+This project demonstrates how to deploy a simple application in Kubernetes using Deployment and Service. 
+The application is exposed externally using NodePort.
