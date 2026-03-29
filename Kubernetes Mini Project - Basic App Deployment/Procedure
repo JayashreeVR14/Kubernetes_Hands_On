@@ -1,0 +1,24 @@
+Steps Followed
+
+Step 1: Create EKS Cluster
+                eksctl create cluster --name my-cluster-jay --region us-east-1 --nodes 2
+
+Step 2: Configure kubectl
+                aws eks --region us-east-1 update-kubeconfig --name my-cluster-jay
+
+Step 3: Verify Nodes
+                kubectl get nodes
+
+Step 4: Deploy Application
+                kubectl apply -f deployment.yaml
+
+Step 5: Expose Application
+                kubectl apply -f service.yaml
+
+Step 6: Verify Resources
+                kubectl get pods
+                kubectl get svc
+                kubectl get endpoints
+
+Step 7: Access Application
+                http://<NODE-EXTERNAL-IP>:30007
