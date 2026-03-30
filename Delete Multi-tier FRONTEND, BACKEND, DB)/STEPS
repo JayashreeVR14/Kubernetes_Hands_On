@@ -1,0 +1,194 @@
+Steps
+  Build Docker images
+  Push to DockerHub
+  Deploy MySQL
+  Deploy Backend
+  Deploy Frontend
+  Access via NodePort
+
+
+STEP 1 — Frontend
+            Build a frontend/index.html
+            <!DOCTYPE html>
+            <html>
+            <head>
+              <title>Login Page</title>
+            </head>
+            <body>
+              <h2>Login</h2>
+              <form action="http://backend-service:3000/login" method="POST">
+                Username: <input type="text" name="username"><br>
+                Password: <input type="password" name="password"><br>
+                <input type="submit" value="Login">
+              </form>
+            </body>
+            </html>
+
+STEP2: Build a frontend/Dockerfile
+          FROM nginx:latest
+          COPY index.html /usr/share/nginx/html/index.html
+
+STEP 3 — Build Backend (Python Flask)
+          backend/app.py
+                  from flask import Flask, request
+                  import mysql.connector
+                  
+                  app = Flask(__name__)
+                  
+                  db = mysql.connector.connect(
+                      host="mysql-service",
+                      user="root",
+                      password="password",
+                      database="testdb"
+                  )
+                  
+                  @app.route('/login', methods=['POST'])
+                  def login():
+                      username = request.form['username']
+                      password = request.form['password']
+                  
+                      cursor = db.cursor()
+                      query = "SELECT * FROM users WHERE username=%s AND password=%s"
+                      cursor.execute(query, (username, password))
+                      result = cursor.fetchall()
+                  
+                      if result:
+                          return "Login Successful ✅"
+                      else:
+                          return "Invalid Credentials ❌"
+                  
+                  app.run(host='0.0.0.0', port=3000)
+backend/requirements.txt
+                    flask
+                    mysql-connector-python
+backend/Dockerfile
+                  FROM python:3.9
+                  WORKDIR /app
+                  COPY requirements.txt .
+                  RUN pip install -r requirements.txt
+                  COPY . .
+                  CMD ["python", "app.py"]
+STEP 4 — MySQL (Same)
+k8s/mysql-deployment.yaml
+        apiVersion: apps/v1
+        kind: Deployment
+        metadata:
+          name: mysql
+        spec:
+          replicas: 1
+          selector:
+            matchLabels:
+              app: mysql
+          template:
+            metadata:
+              labels:
+                app: mysql
+            spec:
+              containers:
+              - name: mysql
+                image: mysql:5.7
+                env:
+                - name: MYSQL_ROOT_PASSWORD
+                  value: password
+                - name: MYSQL_DATABASE
+                  value: testdb
+                ports:
+                - containerPort: 3306
+k8s/mysql-service.yaml
+        apiVersion: v1
+        kind: Service
+        metadata:
+          name: mysql-service
+        spec:
+          ports:
+            - port: 3306
+          selector:
+            app: mysql
+STEP 5 — Backend Deployment
+            k8s/backend-deployment.yaml
+                apiVersion: apps/v1
+                kind: Deployment
+                metadata:
+                  name: backend
+                spec:
+                  replicas: 1
+                  selector:
+                    matchLabels:
+                      app: backend
+                  template:
+                    metadata:
+                      labels:
+                        app: backend
+                    spec:
+                      containers:
+                      - name: backend
+                        image: <your-dockerhub-username>/backend:latest
+                        ports:
+                        - containerPort: 3000
+k8s/backend-service.yaml
+                  apiVersion: v1
+                  kind: Service
+                  metadata:
+                    name: backend-service
+                  spec:
+                    ports:
+                      - port: 3000
+                    selector:
+                      app: backend
+STEP 6 — Frontend Deployment (Same)
+      k8s/frontend-deployment.yaml
+                apiVersion: apps/v1
+                kind: Deployment
+                metadata:
+                  name: frontend
+                spec:
+                  replicas: 1
+                  selector:
+                    matchLabels:
+                      app: frontend
+                  template:
+                    metadata:
+                      labels:
+                        app: frontend
+                    spec:
+                      containers:
+                      - name: frontend
+                        image: <your-dockerhub-username>/frontend:latest
+                        ports:
+                        - containerPort: 80
+k8s/frontend-service.yaml
+                apiVersion: v1
+                kind: Service
+                metadata:
+                  name: frontend-service
+                spec:
+                  type: NodePort
+                  ports:
+                    - port: 80
+                      nodePort: 30007
+                  selector:
+                    app: frontend
+
+STEP 7 — Build & Push
+          docker build -t yourname/frontend ./frontend
+          docker build -t yourname/backend ./backend
+          
+          docker push yourname/frontend
+          docker push yourname/backend
+STEP 8 — Deploy
+          kubectl apply -f k8s/
+
+STEP 9 — Access
+        http://<EC2-IP>:30007
+
+STEP 10 — MySQL Setup
+          kubectl exec -it <mysql-pod> -- bash
+          mysql -u root -p
+          USE testdb;
+          
+          CREATE TABLE users (
+            username VARCHAR(50),
+            password VARCHAR(50)
+          );
+          
+          INSERT INTO users VALUES ('admin','admin123');
