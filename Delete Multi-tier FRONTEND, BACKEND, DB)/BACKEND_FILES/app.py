@@ -1,13 +1,14 @@
 from flask import Flask, request
 import mysql.connector
+import os
 
 app = Flask(__name__)
 
 db = mysql.connector.connect(
-    host="mysql-service",
-    user="root",
-    password="password",
-    database="testdb"
+    host=os.environ.get("DB_HOST"),
+    user=os.environ.get("DB_USER"),
+    password=os.environ.get("DB_PASSWORD"),
+    database=os.environ.get("DB_NAME")
 )
 
 @app.route('/login', methods=['POST'])
