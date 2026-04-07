@@ -1,7 +1,0 @@
-Overview
-
-This project demonstrates a 3-tier Kubernetes application:
-
-Frontend → NGINX
-Backend → Python (Flask)
-Database → MySQL
